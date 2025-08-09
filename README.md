@@ -1,8 +1,8 @@
 ## Links
-Video : https://youtu.be/0kC02I2-VDg
-Pitch Deck : https://www.canva.com/design/DAGvmZOHU0I/gp4p3XARwfh4-7Dkx9_TIg/edit
-ETH Contract : https://sepolia.etherscan.io/address/0x1a9e1ea8123bbcf29ea17ee23ccdf712406c170d
-Oasis Contract : https://explorer.oasis.io/testnet/sapphire/address/0xD13462d1B884A262A9271AD13e3C0949B13663e9
+- Video : https://youtu.be/0kC02I2-VDg
+- Pitch Deck : https://www.canva.com/design/DAGvmZOHU0I/gp4p3XARwfh4-7Dkx9_TIg/edit
+- ETH Contract : https://sepolia.etherscan.io/address/0x1a9e1ea8123bbcf29ea17ee23ccdf712406c170d
+- Oasis Contract : https://explorer.oasis.io/testnet/sapphire/address/0xD13462d1B884A262A9271AD13e3C0949B13663e9
 
 ## 🧬 DeSci Fundraising Platform
 

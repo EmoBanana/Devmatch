@@ -51,7 +51,7 @@ const Home: NextPage = () => {
   const { data: walletClient } = useWalletClient();
   const { switchChain } = useSwitchChain();
 
-  const TREASURY: `0x${string}` = "0xd8542F48b9cB090120d2686fb483896424D6A3d8";
+  const TREASURY: `0x${string}` = "0x15C604f620D775B8CCE7916ee8EE4F9dEB87E1fb";
 
   // Get total number of proposals
   const { data: totalProposals } = useScaffoldReadContract({

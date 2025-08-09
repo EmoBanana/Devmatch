@@ -38,6 +38,7 @@ const MAX_PROJECTS_TO_FETCH = 10;
 
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
+  const [isHovered, setIsHovered] = useState(false);
   const [ongoingProjects, setOngoingProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,12 +114,14 @@ const Home: NextPage = () => {
 
   // Carousel auto-scroll
   useEffect(() => {
+  if (!isHovered) {
     const interval = setInterval(() => {
       nextSlide();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [nextSlide]);
+  }
+}, [nextSlide, isHovered]);
 
   // Handle infinite scroll
   useEffect(() => {
@@ -288,6 +291,8 @@ const Home: NextPage = () => {
           <div
             className="flex transition-transform duration-500 ease-in-out"
             ref={carouselRef}
+            onMouseEnter={() => setIsHovered(true)}
+             onMouseLeave={() => setIsHovered(false)}
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
           >
             {extendedFeatured.map((project, index) => (

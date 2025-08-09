@@ -3,22 +3,23 @@
 import React, { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import { formatEther } from "viem";
-import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
+import { useAccount } from "wagmi";
+import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 
 const ProposedProjectsPage: NextPage = () => {
-  const { data: totalProposals } = useScaffoldReadContract({
-    contractName: "Chariteth",
-    functionName: "getTotalProposals",
+  const { data: allProposals } = (useScaffoldReadContract as any)({
+    contractName: "Innovateth",
+    functionName: "getAllProposals",
   });
 
   const [ids, setIds] = useState<number[]>([]);
 
   useEffect(() => {
-    if (totalProposals) {
-      const n = Number(totalProposals);
+    if (allProposals) {
+      const n = (allProposals as unknown[]).length;
       setIds(Array.from({ length: n }, (_, i) => i + 1));
     }
-  }, [totalProposals]);
+  }, [allProposals]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -37,10 +38,19 @@ const ProposedProjectsPage: NextPage = () => {
 };
 
 const ProposalCard = ({ id }: { id: number }) => {
-  const { data } = useScaffoldReadContract({
-    contractName: "Chariteth",
+  const { address } = useAccount();
+  const { writeContractAsync, isMining } = useScaffoldWriteContract({ contractName: "Innovateth" });
+
+  const { data } = (useScaffoldReadContract as any)({
+    contractName: "Innovateth",
     functionName: "getProposalDetails",
     args: [BigInt(id)],
+  });
+
+  const { data: voted } = (useScaffoldReadContract as any)({
+    contractName: "Innovateth",
+    functionName: "hasVoted",
+    args: [address, BigInt(id)],
   });
 
   if (!data)
@@ -50,21 +60,70 @@ const ProposalCard = ({ id }: { id: number }) => {
       </div>
     );
 
-  const [, title, description, fundingGoal, totalRaised] = data as unknown as [number, string, string, bigint, bigint];
+  const proposal = data as {
+    creator: string;
+    title: string;
+    description: string;
+    fundingGoal: bigint;
+    totalRaised: bigint;
+    status: number;
+    creationTime: bigint;
+    votingDeadline: bigint;
+    totalVotes: bigint;
+    currentMilestone: bigint;
+    milestones: any[];
+  };
 
-  const pct = (Number(formatEther(totalRaised)) / Math.max(1e-18, Number(formatEther(fundingGoal)))) * 100;
+  const pct =
+    (Number(formatEther(proposal.totalRaised)) / Math.max(1e-18, Number(formatEther(proposal.fundingGoal)))) * 100;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const isPending = proposal.status === 0; // Pending
+  const votingOpen = isPending && nowSec <= Number(proposal.votingDeadline);
+  const alreadyVoted = Boolean(voted);
+
+  const onVote = async () => {
+    try {
+      await writeContractAsync({
+        functionName: "voteOnProposal",
+        args: [BigInt(id)],
+      });
+    } catch (e) {
+      console.error(e);
+      alert("Vote failed");
+    }
+  };
 
   return (
     <div className="rounded-2xl p-4 border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 shadow">
-      <div className="font-extrabold text-lg">{title || `Proposal #${id}`}</div>
-      <p className="text-slate-300 text-sm">{description || "No description"}</p>
-      <div className="mt-2 text-sm">Goal: {formatEther(fundingGoal)} ETH</div>
-      <div className="mt-1 text-sm">Raised: {formatEther(totalRaised)} ETH</div>
+      <div className="font-extrabold text-lg">{proposal.title || `Proposal #${id}`}</div>
+      <p className="text-slate-300 text-sm">{proposal.description || "No description"}</p>
+      <div className="mt-2 text-sm">Goal: {formatEther(proposal.fundingGoal)} ETH</div>
+      <div className="mt-1 text-sm">Raised: {formatEther(proposal.totalRaised)} ETH</div>
+      <div className="mt-1 text-sm">Votes: {String(proposal.totalVotes)}</div>
       <div className="mt-2 w-full h-2 bg-white/10 rounded-full overflow-hidden">
         <div
           className="h-2 bg-gradient-to-r from-blue-400 to-emerald-400"
           style={{ width: `${Math.min(100, pct)}%` }}
         />
+      </div>
+      <div className="mt-3 flex gap-2 items-center">
+        <button
+          type="button"
+          className="rounded-lg bg-gradient-to-r from-blue-400 to-purple-500 text-slate-900 font-extrabold px-3 py-1.5 shadow disabled:opacity-60"
+          onClick={onVote}
+          disabled={!votingOpen || alreadyVoted || isMining || !address}
+          title={
+            !address ? "Connect wallet" : alreadyVoted ? "You have already voted" : !votingOpen ? "Voting closed" : ""
+          }
+        >
+          {isMining ? "Voting..." : alreadyVoted ? "Voted" : "Vote"}
+        </button>
+        {isPending ? (
+          <span className="text-xs text-slate-400">
+            Deadline: {new Date(Number(proposal.votingDeadline) * 1000).toLocaleString()}
+          </span>
+        ) : null}
       </div>
     </div>
   );

@@ -3,10 +3,23 @@
 import React, { useState } from "react";
 import type { NextPage } from "next";
 import { parseEther } from "viem";
+import { useAccount } from "wagmi";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 
 const CreateProposalPage: NextPage = () => {
-  const { writeContractAsync } = useScaffoldWriteContract({ contractName: "Chariteth" });
+  const { address } = useAccount();
+  const { writeContractAsync } = useScaffoldWriteContract({ contractName: "Innovateth" });
+
+  const { data: kycInfo } = (useScaffoldReadContract as any)({
+    contractName: "Innovateth",
+    functionName: "kycVerifications",
+    args: [address],
+  });
+  const isVerified: boolean = Boolean(kycInfo?.[0]);
+
+  const [docHash, setDocHash] = useState("");
+  const [kycSubmitting, setKycSubmitting] = useState(false);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -22,8 +35,44 @@ const CreateProposalPage: NextPage = () => {
   };
   const removeMilestone = (i: number) => setMilestones(ms => ms.filter((_, idx) => idx !== i));
 
+  const handleKycSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docHash) return alert("Please provide a document hash (e.g. IPFS CID)");
+    try {
+      setKycSubmitting(true);
+      await writeContractAsync({
+        functionName: "submitKYC",
+        args: [docHash],
+      });
+    } catch (e) {
+      console.error(e);
+      alert("KYC submission failed");
+    } finally {
+      setKycSubmitting(false);
+    }
+  };
+
+  const handleAutoKyc = async () => {
+    try {
+      setKycSubmitting(true);
+      await writeContractAsync({
+        functionName: "submitKYC",
+        args: ["auto-kyc"],
+      });
+    } catch (e) {
+      console.error(e);
+      alert("Auto-verify failed");
+    } finally {
+      setKycSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isVerified) {
+      alert("Please complete KYC first");
+      return;
+    }
     if (!title || !description || !goal || milestones.length === 0) return;
     const titles = milestones.map(m => m.title);
     const descs = milestones.map(m => m.desc);
@@ -51,6 +100,44 @@ const CreateProposalPage: NextPage = () => {
       setSubmitting(false);
     }
   };
+
+  if (!isVerified) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Complete KYC</h1>
+        <form
+          onSubmit={handleKycSubmit}
+          className="max-w-[700px] mx-auto grid gap-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-4 text-slate-100 shadow"
+        >
+          <p className="text-slate-300 text-sm">Your address must submit KYC once before creating proposals.</p>
+          <label className="font-bold">KYC Document Hash (e.g. IPFS CID)</label>
+          <input
+            value={docHash}
+            onChange={e => setDocHash(e.target.value)}
+            className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
+            placeholder="ipfs://... or CID"
+          />
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              className="mt-2 rounded-xl bg-gradient-to-r from-emerald-400 to-emerald-500 text-slate-900 font-extrabold px-4 py-2 shadow disabled:opacity-70"
+              disabled={kycSubmitting}
+            >
+              {kycSubmitting ? "Submitting..." : "Submit KYC"}
+            </button>
+            <button
+              type="button"
+              onClick={handleAutoKyc}
+              className="mt-2 rounded-xl bg-gradient-to-r from-indigo-400 to-indigo-500 text-slate-900 font-extrabold px-4 py-2 shadow disabled:opacity-70"
+              disabled={kycSubmitting}
+            >
+              {kycSubmitting ? "Verifying..." : "Auto-verify"}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

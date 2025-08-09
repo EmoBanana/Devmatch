@@ -8,6 +8,29 @@ import { EtherInput } from "~~/components/scaffold-eth";
 import featured from "~~/data/featured.json";
 import metaData from "~~/data/metadata.json";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { parseUnits } from "viem";
+import { usePublicClient, useWalletClient, useSwitchChain } from "wagmi";
+import { sepolia } from "viem/chains";
+
+const USDC = {
+  address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" as `0x${string}`, // Sepolia USDC
+  decimals: 6,
+};
+
+// Minimal ABI for transfer
+const USDC_TRANSFER_ABI = [
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_to", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
 
 // Removed external stylesheet import
 // import "../styles/chariteth.css";
@@ -24,6 +47,11 @@ const Home: NextPage = () => {
   const [selectedTag, setSelectedTag] = useState("Ongoing");
   const [donationAmount, setDonationAmount] = useState("");
   const carouselRef = useRef<HTMLDivElement>(null);
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
+  const { switchChain } = useSwitchChain();
+
+  const TREASURY: `0x${string}` = "0xd8542F48b9cB090120d2686fb483896424D6A3d8"; // <-- set this
 
   const { writeContractAsync: writeCharitethAsync } = useScaffoldWriteContract({
     contractName: "Chariteth",
@@ -116,41 +144,93 @@ const Home: NextPage = () => {
     }
   }, [currentIndex, extendedFeatured.length]);
 
+  // const handleDonate = async (proposalId: number) => {
+  //   if (!connectedAddress) {
+  //     alert("Please connect your wallet first");
+  //     return;
+  //   }
+
+  //   if (!donationAmount) {
+  //     alert("Please enter a donation amount");
+  //     return;
+  //   }
+
+  //   try {
+  //     const donationWei = parseEther(donationAmount);
+
+  //     await writeCharitethAsync({
+  //       functionName: "donate",
+  //       args: [BigInt(proposalId)],
+  //       value: donationWei,
+  //     });
+
+  //     // Update local state
+  //     setOngoingProjects(prevProjects =>
+  //       prevProjects.map(project =>
+  //         project.id === proposalId ? { ...project, totalRaised: project.totalRaised + donationWei } : project,
+  //       ),
+  //     );
+
+  //     setDonationAmount("");
+  //     setSelectedProject(null);
+  //     alert("Donation successful!");
+  //   } catch (error) {
+  //     console.error("Donation error:", error);
+  //     alert(`Donation failed: ${error}`);
+  //   }
+  // };
+
   const handleDonate = async (proposalId: number) => {
-    if (!connectedAddress) {
-      alert("Please connect your wallet first");
-      return;
+  if (!connectedAddress) {
+    alert("Please connect your wallet first");
+    return;
+  }
+  if (!donationAmount) {
+    alert("Please enter a donation amount");
+    return;
+  }
+  if (!walletClient) {
+    alert("Wallet client not ready");
+    return;
+  }
+
+  try {
+    // Ensure we’re on Sepolia
+    if (walletClient.chain?.id !== sepolia.id) {
+      await switchChain({ chainId: sepolia.id });
     }
 
-    if (!donationAmount) {
-      alert("Please enter a donation amount");
-      return;
-    }
+    // Amount in USDC (6 decimals)
+    const amount = parseUnits(donationAmount, USDC.decimals);
 
-    try {
-      const donationWei = parseEther(donationAmount);
+    // Choose recipient: treasury or the project’s creator
+    const recipient =
+      (selectedProject?.creator as `0x${string}`) || TREASURY;
 
-      await writeCharitethAsync({
-        functionName: "donate",
-        args: [BigInt(proposalId)],
-        value: donationWei,
-      });
+    // Send USDC directly
+    const txHash = await walletClient.writeContract({
+      address: USDC.address,
+      abi: USDC_TRANSFER_ABI,
+      functionName: "transfer",
+      args: [recipient, amount],
+      account: connectedAddress as `0x${string}`,
+      chain: sepolia,
+    });
 
-      // Update local state
-      setOngoingProjects(prevProjects =>
-        prevProjects.map(project =>
-          project.id === proposalId ? { ...project, totalRaised: project.totalRaised + donationWei } : project,
-        ),
-      );
+    // Wait for confirmation
+    await publicClient!.waitForTransactionReceipt({ hash: txHash });
 
-      setDonationAmount("");
-      setSelectedProject(null);
-      alert("Donation successful!");
-    } catch (error) {
-      console.error("Donation error:", error);
-      alert(`Donation failed: ${error}`);
-    }
-  };
+    // (Optional) update UI — if you’re tracking ETH raised only, skip this.
+    // You could add a `totalRaisedUsdc` field instead.
+    setDonationAmount("");
+    setSelectedProject(null);
+    alert("USDC donation sent!");
+  } catch (err) {
+    console.error("USDC donation error:", err);
+    alert(`Donation failed: ${(err as Error)?.message ?? err}`);
+  }
+};
+
 
   const handleTagClick = (tag: string) => {
     if (tag === "Ongoing") {
@@ -234,6 +314,13 @@ const Home: NextPage = () => {
                     <p>Funding Goal:</p>
                     <p className="text-slate-900">{project.goal}</p>
                   </div>
+                  <input
+                    className="input input-bordered"
+                    value={donationAmount}
+                    onChange={e => setDonationAmount(e.target.value)}
+                    placeholder="Amount (USDC)"
+                    inputMode="decimal"
+                  />
                   <button
                     className="mt-2 rounded-xl bg-gradient-to-r from-indigo-400 to-blue-400 text-slate-900 font-black py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
                     onClick={() => handleDonate(project.id)}

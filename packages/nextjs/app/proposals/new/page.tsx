@@ -55,66 +55,80 @@ const CreateProposalPage: NextPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Create Proposal</h1>
-      <form onSubmit={handleSubmit} className="create-form">
-        <label>Title</label>
-        <input value={title} onChange={e => setTitle(e.target.value)} className="input" placeholder="Project title" />
-        <label>Description</label>
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-[900px] mx-auto grid gap-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-4 text-slate-100 shadow"
+      >
+        <label className="font-bold">Title</label>
+        <input
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
+          placeholder="Project title"
+        />
+        <label className="font-bold">Description</label>
         <textarea
           value={description}
           onChange={e => setDescription(e.target.value)}
-          className="textarea"
+          className="min-h-[100px] rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
           placeholder="Project description"
         />
-        <label>Funding Goal (ETH)</label>
-        <input value={goal} onChange={e => setGoal(e.target.value)} className="input" placeholder="e.g. 5" />
+        <label className="font-bold">Funding Goal (ETH)</label>
+        <input
+          value={goal}
+          onChange={e => setGoal(e.target.value)}
+          className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
+          placeholder="e.g. 5"
+        />
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-semibold">Milestones</h2>
-            <button type="button" className="btn-add" onClick={addMilestone}>
+            <button
+              type="button"
+              className="rounded-lg bg-gradient-to-r from-indigo-400 to-indigo-500 text-slate-900 font-extrabold px-3 py-1 shadow"
+              onClick={addMilestone}
+            >
               + Add Milestone
             </button>
           </div>
           {milestones.map((m, i) => (
-            <div key={i} className="milestone-row">
+            <div key={i} className="grid gap-2 md:[grid-template-columns:1.2fr_2fr_.6fr_auto] grid-cols-1 mb-2">
               <input
                 value={m.title}
                 onChange={e => updateMilestone(i, "title", e.target.value)}
-                className="input"
+                className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
                 placeholder="Title"
               />
               <input
                 value={m.desc}
                 onChange={e => updateMilestone(i, "desc", e.target.value)}
-                className="input"
+                className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
                 placeholder="Description"
               />
               <input
                 value={m.pct}
                 onChange={e => updateMilestone(i, "pct", e.target.value)}
-                className="input"
+                className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
                 placeholder="%"
               />
-              <button type="button" className="btn-remove" onClick={() => removeMilestone(i)}>
+              <button
+                type="button"
+                className="rounded-lg border border-white/30 text-slate-100 px-3 py-2"
+                onClick={() => removeMilestone(i)}
+              >
                 Remove
               </button>
             </div>
           ))}
         </div>
-        <button type="submit" className="btn-submit" disabled={submitting}>
+        <button
+          type="submit"
+          className="mt-2 rounded-xl bg-gradient-to-r from-indigo-400 to-indigo-500 text-slate-900 font-extrabold px-4 py-2 shadow disabled:opacity-70"
+          disabled={submitting}
+        >
           {submitting ? "Submitting..." : "Create"}
         </button>
       </form>
-      <style>{`
-        .create-form { max-width: 900px; margin: 0 auto; display:grid; gap:.75rem; background:linear-gradient(180deg,#131a2a,#0f1524); padding:16px; border:1px solid rgba(255,255,255,.12); border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
-        label { font-weight:700; }
-        .input, .textarea { background:#0e162b; border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:.6rem .75rem; color:#e6ecff; }
-        .textarea { min-height: 100px; }
-        .milestone-row { display:grid; grid-template-columns: 1.2fr 2fr .6fr auto; gap:.5rem; margin-bottom:.5rem; }
-        .btn-add { background:linear-gradient(90deg,#6ea7ff,#6d7dff); color:#0b0f1d; border:none; padding:.4rem .75rem; border-radius:10px; font-weight:800; }
-        .btn-remove { background:transparent; border:1px solid rgba(255,255,255,.2); color:#e6ecff; border-radius:10px; padding:.4rem .75rem; }
-        .btn-submit { margin-top:.5rem; background:linear-gradient(90deg,#6ea7ff,#6d7dff); color:#0b0f1d; border:none; padding:.6rem 1rem; border-radius:12px; font-weight:800; }
-        @media (max-width: 720px) { .milestone-row { grid-template-columns: 1fr; } }
-      `}</style>
     </div>
   );
 };

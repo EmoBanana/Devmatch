@@ -9,7 +9,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const externalContracts = {
   11155111: {
     Innovateth: {
-      address: "0x15C604f620D775B8CCE7916ee8EE4F9dEB87E1fb",
+      address: "0x1a9E1EA8123bbcF29EA17eE23ccDf712406c170d",
       abi: ABI as unknown as Abi,
     },
   },

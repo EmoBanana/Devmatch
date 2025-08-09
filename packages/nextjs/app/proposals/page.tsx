@@ -53,6 +53,11 @@ const ProposalCard = ({ id }: { id: number }) => {
     args: [address, BigInt(id)],
   });
 
+  const { data: owner } = (useScaffoldReadContract as any)({
+    contractName: "Innovateth",
+    functionName: "owner",
+  });
+
   if (!data)
     return (
       <div className="rounded-2xl p-4 border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 shadow">
@@ -74,12 +79,14 @@ const ProposalCard = ({ id }: { id: number }) => {
     milestones: any[];
   };
 
-  const pct = (Number(formatEther(proposal.totalRaised)) / Math.max(1e-18, Number(formatEther(proposal.fundingGoal)))) * 100;
+  const pct =
+    (Number(formatEther(proposal.totalRaised)) / Math.max(1e-18, Number(formatEther(proposal.fundingGoal)))) * 100;
 
   const nowSec = Math.floor(Date.now() / 1000);
   const isPending = proposal.status === 0; // Pending
   const votingOpen = isPending && nowSec <= Number(proposal.votingDeadline);
   const alreadyVoted = Boolean(voted);
+  const isOwner = owner && String(owner).toLowerCase() === String(address || "").toLowerCase();
 
   const onVote = async () => {
     try {
@@ -90,6 +97,19 @@ const ProposalCard = ({ id }: { id: number }) => {
     } catch (e) {
       console.error(e);
       alert("Vote failed");
+    }
+  };
+
+  const onSetTwenty = async () => {
+    try {
+      await writeContractAsync({
+        functionName: "changeVoteRequired",
+        args: [0],
+      });
+      alert("Proposal approved");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to approve proposal");
     }
   };
 
@@ -106,16 +126,31 @@ const ProposalCard = ({ id }: { id: number }) => {
           style={{ width: `${Math.min(100, pct)}%` }}
         />
       </div>
-      <div className="mt-3 flex gap-2 items-center">
+      <div className="mt-3 flex flex-wrap gap-2 items-center">
         <button
           type="button"
           className="rounded-lg bg-gradient-to-r from-blue-400 to-purple-500 text-slate-900 font-extrabold px-3 py-1.5 shadow disabled:opacity-60"
           onClick={onVote}
           disabled={!votingOpen || alreadyVoted || isMining || !address}
-          title={!address ? "Connect wallet" : alreadyVoted ? "You have already voted" : !votingOpen ? "Voting closed" : ""}
+          title={
+            !address ? "Connect wallet" : alreadyVoted ? "You have already voted" : !votingOpen ? "Voting closed" : ""
+          }
         >
           {isMining ? "Voting..." : alreadyVoted ? "Voted" : "Vote"}
         </button>
+        {isOwner ? (
+          <div className="ml-auto flex gap-2">
+            <button
+              type="button"
+              className="rounded-lg bg-gradient-to-r from-green-300 to-green-400 text-slate-900 font-extrabold px-3 py-1.5 shadow disabled:opacity-60"
+              onClick={onSetTwenty}
+              disabled={isMining}
+              title="Approve Proposal"
+            >
+              {isMining ? "Approving..." : "Approve Proposal"}
+            </button>
+          </div>
+        ) : null}
         {isPending ? (
           <span className="text-xs text-slate-400">
             Deadline: {new Date(Number(proposal.votingDeadline) * 1000).toLocaleString()}

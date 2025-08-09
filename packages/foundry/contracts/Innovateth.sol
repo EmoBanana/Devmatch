@@ -89,6 +89,7 @@ contract Innovateth is Ownable, ReentrancyGuard {
     event MilestoneRejected(uint256 indexed proposalId, uint256 milestoneIndex, string reason);
     event FundReleased(uint256 indexed proposalId, uint256 milestoneIndex, uint256 amount);
     event LevelUp(address indexed user, uint256 newLevel);
+    event ProposalVotesSet(uint256 indexed proposalId, uint256 votes);
 
     // Constructor
     constructor() Ownable(msg.sender) {}
@@ -369,6 +370,21 @@ contract Innovateth is Ownable, ReentrancyGuard {
 
         proposal.status = ProposalStatus.Cancelled;
         emit ProposalCancelled(_proposalId, _reason);
+    }
+
+    /**
+     * Owner utility: set proposal votes and auto-activate if threshold met
+     */
+    function setProposalVotes(uint256 _proposalId, uint256 _votes) external onlyOwner {
+        Proposal storage proposal = proposals[_proposalId];
+        require(proposal.creator != address(0), "Invalid proposal");
+        require(proposal.status == ProposalStatus.Pending, "Invalid proposal status");
+        proposal.totalVotes = _votes;
+        emit ProposalVotesSet(_proposalId, _votes);
+        if (proposal.totalVotes >= VOTES_REQUIRED) {
+            proposal.status = ProposalStatus.Active;
+            emit ProposalActivated(_proposalId);
+        }
     }
 
     // Utility Functions

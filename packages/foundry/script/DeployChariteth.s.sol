@@ -2,38 +2,19 @@
 pragma solidity ^0.8.19;
 
 import "./DeployHelpers.s.sol";
-import { Chariteth } from "../contracts/Chariteth.sol";
+import { Innovateth } from "../contracts/Innovateth.sol";
 
 /**
  * @notice Deployment script for Chariteth contract
  */
 contract DeployChariteth is ScaffoldETHDeploy {
-    error InvalidPrivateKey(string);
-
-    function run() external returns (Chariteth) {
-        uint256 deployerPrivateKey = setupLocalhostEnv();
-        if (deployerPrivateKey == 0) {
-            revert InvalidPrivateKey(
-                "You don't have a deployer account. Make sure you have set DEPLOYER_PRIVATE_KEY in .env or use `yarn generate` to generate a new random account"
-            );
-        }
-
-        vm.startBroadcast(deployerPrivateKey);
-        Chariteth chariteth = new Chariteth();
+    function run() external ScaffoldEthDeployerRunner returns (Innovateth) {
+        Innovateth innovateth = new Innovateth();
         console.logString(
             string.concat(
-                "Chariteth deployed at: ", vm.toString(address(chariteth))
+                "Innovateth deployed at: ", vm.toString(address(innovateth))
             )
         );
-        vm.stopBroadcast();
-
-        /**
-         * This function generates the file containing the contracts Abi definitions.
-         * These definitions are used to derive the types needed in the custom scaffold-eth hooks, for example.
-         * This function should be called last.
-         */
-        exportDeployments();
-
-        return chariteth;
+        return innovateth;
     }
 }

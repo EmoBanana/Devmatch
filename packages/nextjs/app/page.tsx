@@ -205,7 +205,7 @@ const Home: NextPage = () => {
       {/* Carousel */}
       <div className="relative my-8 md:my-10">
         <button
-          className="absolute top-1/2 left-[-12px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-slate-900 shadow transition-transform hover:scale-105"
+          className="absolute top-1/2 left-[-60px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-slate-900 shadow transition-transform hover:scale-105"
           onClick={prevSlide}
           aria-label="Previous slide"
         >
@@ -247,7 +247,7 @@ const Home: NextPage = () => {
           </div>
         </div>
         <button
-          className="absolute top-1/2 right-[-12px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-slate-900 shadow transition-transform hover:scale-105"
+          className="absolute top-1/2 right-[-60px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-slate-900 shadow transition-transform hover:scale-105"
           onClick={nextSlide}
           aria-label="Next slide"
         >

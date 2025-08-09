@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
-contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGuard {
-    using Counters for Counters.Counter;
+contract Innovateth is Ownable, ReentrancyGuard {
 
     // Proposal and Milestone Enums
     enum ProposalStatus { 
@@ -60,7 +56,6 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
     struct UserProfile {
         uint256 experiencePoints;
         uint256 level;
-        uint256[] nftMilestonesEarned;
     }
 
     // Mappings
@@ -72,8 +67,7 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
     mapping(address => mapping(uint256 => mapping(uint256 => bool))) public milestoneApprovals;
 
     // Counters and Constants
-    Counters.Counter private _proposalIds;
-    Counters.Counter private _tokenIds;
+    uint256 private _proposalIds;
 
     // Configuration Constants
     uint256 public VOTES_REQUIRED = 20;
@@ -82,7 +76,6 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
     uint256 public constant MILESTONE_APPROVAL_PERIOD = 3 days;
     uint256 public constant XP_PER_ETH = 1;
     uint256 public constant XP_LEVEL_THRESHOLD = 100;
-    uint256[] public NFT_MILESTONE_LEVELS = [1, 5, 10, 15];
 
     // Events
     event KYCVerified(address indexed user, string documentHash);
@@ -96,63 +89,11 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
     event MilestoneRejected(uint256 indexed proposalId, uint256 milestoneIndex, string reason);
     event FundReleased(uint256 indexed proposalId, uint256 milestoneIndex, uint256 amount);
     event LevelUp(address indexed user, uint256 newLevel);
-    event NFTAwarded(address indexed user, uint256 tokenId, uint256 level);
 
     // Constructor
-    constructor() 
-        ERC721("FundraiserNFT", "FNFT") 
-        Ownable(msg.sender) 
-    {}
+    constructor() Ownable(msg.sender) {}
 
-    function _update(address to, uint256 tokenId, address auth)
-        internal
-        virtual
-        override(ERC721Enumerable, ERC721)
-        returns (address)
-    {
-        return super._update(to, tokenId, auth);
-    }
-
-    function _increaseBalance(address account, uint128 amount)
-        internal
-        virtual
-        override(ERC721Enumerable, ERC721)
-    {
-        super._increaseBalance(account, amount);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
-        return ERC721URIStorage.tokenURI(tokenId);
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC721Enumerable, ERC721URIStorage)
-        returns (bool)
-    {
-        return 
-            ERC721Enumerable.supportsInterface(interfaceId) ||
-            ERC721.supportsInterface(interfaceId) ||
-            ERC721URIStorage.supportsInterface(interfaceId);
-    }
-
-    function _baseURI() 
-        internal 
-        pure
-        virtual
-        override(ERC721) 
-        returns (string memory) 
-    {
-        return "";
-    }
+    // ERC721-related code removed to reduce contract size
 
     // KYC Verification
     function submitKYC(string memory _documentHash) external {
@@ -190,8 +131,8 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
         require(totalPercentage == 100, "Milestone percentages must total 100%");
 
         // Create proposal
-        _proposalIds.increment();
-        uint256 newProposalId = _proposalIds.current();
+        _proposalIds += 1;
+        uint256 newProposalId = _proposalIds;
 
         Proposal storage newProposal = proposals[newProposalId];
         newProposal.creator = msg.sender;
@@ -221,7 +162,7 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
     }
 
     function getAllProposals() external view returns (Proposal[] memory) {
-        uint256 total = _proposalIds.current();
+        uint256 total = _proposalIds;
         Proposal[] memory allProposals = new Proposal[](total);
 
         for (uint256 i = 0; i < total; i++) {
@@ -291,20 +232,19 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
         userProfile.experiencePoints += xpEarned;
 
         // Level up mechanism
-        _recalculateLevelAndNFT(userProfile, _donor);
+        _recalculateLevel(userProfile, _donor);
     }
 
-    function _recalculateLevelAndNFT(UserProfile storage _userProfile, address _user) internal {
+    function _recalculateLevel(UserProfile storage _userProfile, address _user) internal {
         uint256 currentLevel = 0;
         while (_userProfile.experiencePoints >= (currentLevel + 1) * XP_LEVEL_THRESHOLD) {
             currentLevel++;
         }
         
-        // Only update and check for NFT if level has changed
+        // Only update if level has changed
         if (currentLevel != _userProfile.level) {
             _userProfile.level = currentLevel;
             emit LevelUp(_user, currentLevel);
-            _checkAndAwardNFT(_user);
         }
     }
 
@@ -319,8 +259,8 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
                 : 0;
         }
 
-        // Recalculate level and potentially award NFT
-        _recalculateLevelAndNFT(userProfile, _user);
+        // Recalculate level
+        _recalculateLevel(userProfile, _user);
     }
 
     function changeVoteRequired (uint NewVoteNumber) external  onlyOwner {
@@ -331,50 +271,7 @@ contract Chariteth is ERC721Enumerable, ERC721URIStorage, Ownable, ReentrancyGua
         return VOTES_REQUIRED;
     }
 
-    // NFT Minting with Level Check
-    function _checkAndAwardNFT(address _user) internal {
-        UserProfile storage userProfile = userProfiles[_user];
-        
-        for (uint256 i = 0; i < NFT_MILESTONE_LEVELS.length; i++) {
-            if (
-                userProfile.level == NFT_MILESTONE_LEVELS[i] && 
-                !_nftAlreadyEarned(userProfile, NFT_MILESTONE_LEVELS[i])
-            ) {
-                _tokenIds.increment();
-                uint256 newTokenId = _tokenIds.current();
-                
-                _safeMint(_user, newTokenId);
-                
-                // Set IPFS URI based on level (replace with actual URIs)
-                string memory levelUri = _getLevelUri(NFT_MILESTONE_LEVELS[i]);
-                _setTokenURI(newTokenId, levelUri);
-                
-                // Track earned NFT
-                userProfile.nftMilestonesEarned.push(NFT_MILESTONE_LEVELS[i]);
-                
-                emit NFTAwarded(_user, newTokenId, NFT_MILESTONE_LEVELS[i]);
-            }
-        }
-    }
-
-    // Helper to check if NFT already earned
-    function _nftAlreadyEarned(UserProfile storage _profile, uint256 _level) internal view returns (bool) {
-        for (uint256 i = 0; i < _profile.nftMilestonesEarned.length; i++) {
-            if (_profile.nftMilestonesEarned[i] == _level) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Internal function to get IPFS URI based on level
-    function _getLevelUri(uint256 _level) internal pure returns (string memory) {
-        if (_level == 1) return "ipfs://bafkreiarpb6ruyffgvtfk7dd57bvgz5rgi5jsr5bkwoi4hlbu2nb56snvi";
-        if (_level == 5) return "ipfs://bafkreicopezulwbjjpx2zcpsuzefitfgswnbwecp5iqh6s3zmiw7rejfna";
-        if (_level == 10) return "ipfs://bafkreicc2wnatjzk5p3ldf637mtpbzacsb3kjsdldha2mmn76rejz6beaq";
-        if (_level == 15) return "ipfs://bafkreigcymgafomo2zjsvcxzk4o2wnytyk7ab3x6s3slw6ozyu6vxr5vku";
-        return "";
-    }
+    // NFT reward logic fully removed
 
     // Submit Milestone Document
     function submitMilestoneDocument(

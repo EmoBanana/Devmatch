@@ -1,80 +1,130 @@
-# 🏗 Scaffold-ETH 2
+## Links
+Video : https://youtu.be/0kC02I2-VDg
+Pitch Deck : https://www.canva.com/design/DAGvmZOHU0I/gp4p3XARwfh4-7Dkx9_TIg/edit
+ETH Contract : https://sepolia.etherscan.io/address/0x1a9e1ea8123bbcf29ea17ee23ccdf712406c170d
+Oasis Contract : https://explorer.oasis.io/testnet/sapphire/address/0xD13462d1B884A262A9271AD13e3C0949B13663e9
 
-<h4 align="center">
-  <a href="https://docs.scaffoldeth.io">Documentation</a> |
-  <a href="https://scaffoldeth.io">Website</a>
-</h4>
+## 🧬 DeSci Fundraising Platform
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+A blockchain-powered platform that enables transparent, milestone-based fundraising for scientific research — empowering researchers, ensuring donor trust, and accelerating global scientific progress.
 
-⚙️ Built using NextJS, RainbowKit, Foundry, Wagmi, Viem, and Typescript.
+### 🌟 Overview
+Innovateth bridges the gap between scientists and funders by leveraging decentralised finance principles. The platform enables trustless, verifiable, and milestone-driven research funding so projects can be supported by anyone, anywhere, without traditional institutional bottlenecks. By combining smart contracts, community governance, and open science principles, we make research funding faster, fairer, and more transparent.
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
+### 🚀 Key Features
+- **Milestone-Based Funding**: Funds are released in stages as research teams submit verifiable results and updates.
+- **DAO Governance**: Supporters vote on which projects to fund and approve milestone completions.
+- **Global Accessibility**: Anyone can contribute from anywhere without intermediaries.
+- **Transparency by Design**: All transactions, proposals, and updates are publicly verifiable on-chain.
 
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
 
-## Requirements
+### 🎯 Why This Matters
+- **For Researchers**: Direct, global access to funding without bureaucratic delays.
+- **For Donors**: Accountability through on-chain milestone verification.
+- **For the World**: Accelerates innovation in health, environment, and technology.
 
-Before you begin, you need to install the following tools:
+---
 
-- [Node (>= v20.18.3)](https://nodejs.org/en/download/)
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
+### Project tech
+Built on Scaffold-ETH 2 with Next.js App Router, Wagmi, RainbowKit, Viem, and Foundry.
 
-## Quickstart
+- **Smart contract**: `Innovateth.sol`
+- **Frontend**: Next.js with scaffold-eth hooks and components
+- **Network**: Sepolia by default 
 
-To get started with Scaffold-ETH 2, follow the steps below:
+### Requirements
 
-1. Install dependencies if it was skipped in CLI:
+- **Node**: >= 20.18.3
+- **Yarn**: 3.x (Berry) — the repo pins `yarn@3.2.3`
+- **Git**: latest
 
-```
-cd my-dapp-example
+### Monorepo layout
+
+- `packages/foundry`: Solidity contracts, deployment scripts, tests
+- `packages/nextjs`: Frontend app, scaffold-eth components and hooks
+
+---
+
+## Quickstart (local)
+
+1) Install deps
+
+```bash
 yarn install
 ```
 
-2. Run a local network in the first terminal:
+2) Start a local chain (Anvil)
 
-```
+```bash
 yarn chain
 ```
 
-This command starts a local Ethereum network using Foundry. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `packages/foundry/foundry.toml`.
+3) Deploy contracts to local chain
 
-3. On a second terminal, deploy the test contract:
-
-```
+```bash
 yarn deploy
 ```
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/foundry/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/foundry/script` to deploy the contract to the network. You can also customize the deploy script.
+4) Run the frontend
 
-4. On a third terminal, start your NextJS app:
-
-```
+```bash
 yarn start
 ```
 
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
+---
 
-Run smart contract test with `yarn foundry:test`
+## Scripts
 
-- Edit your smart contracts in `packages/foundry/contracts`
-- Edit your frontend homepage at `packages/nextjs/app/page.tsx`. For guidance on [routing](https://nextjs.org/docs/app/building-your-application/routing/defining-routes) and configuring [pages/layouts](https://nextjs.org/docs/app/building-your-application/routing/pages-and-layouts) checkout the Next.js documentation.
-- Edit your deployment scripts in `packages/foundry/script`
+From repo root:
 
+- **Start local chain**: `yarn chain`
+- **Deploy**: `yarn deploy`
+- **Frontend dev**: `yarn start`
+- **Compile**: `yarn compile`
+- **Test (Foundry)**: `yarn foundry:test`
+- **Lint/format**: `yarn lint`, `yarn format`
 
-## Documentation
+All scripts proxy to the relevant workspace under the hood (see `package.json`).
 
-Visit our [docs](https://docs.scaffoldeth.io) to learn how to start building with Scaffold-ETH 2.
+---
 
-To know more about its features, check out our [website](https://scaffoldeth.io).
+## Development notes
 
-## Contributing to Scaffold-ETH 2
+- Frontend uses scaffold-eth hooks for contract I/O:
+  - Read: `useScaffoldReadContract`
+  - Write: `useScaffoldWriteContract`
+  - Events: `useScaffoldEventHistory`
+- To interact with locally deployed contracts in the UI, ensure `packages/nextjs/contracts/deployedContracts.ts` contains your local chain deployment for `Innovateth`.
 
-We welcome contributions to Scaffold-ETH 2!
+---
 
-Please see [CONTRIBUTING.MD](https://github.com/scaffold-eth/scaffold-eth-2/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-ETH 2.
+## Testing
+
+```bash
+yarn foundry:test
+```
+
+Add tests in `packages/foundry/test`.
+
+---
+
+## Deploying to a live network
+
+1) Set RPC/keys in `packages/foundry/.env` (copied from `.env.example` on install)
+2) Deploy with the workspace script
+
+```bash
+yarn foundry:deploy
+```
+
+Optional: verify with `yarn foundry:verify`.
+
+Update the frontend contract config in:
+- `packages/nextjs/contracts/deployedContracts.ts` (own deployments)
+- `packages/nextjs/contracts/externalContracts.ts` (3rd-party or predeployed)
+
+---
+
+## License
+
+See `LICENCE` in this repository.

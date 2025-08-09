@@ -13,11 +13,10 @@ import { usePublicClient, useWalletClient, useSwitchChain } from "wagmi";
 import { sepolia } from "viem/chains";
 
 const USDC = {
-  address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" as `0x${string}`, // Sepolia USDC
+  address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" as `0x${string}`,
   decimals: 6,
 };
 
-// Minimal ABI for transfer
 const USDC_TRANSFER_ABI = [
   {
     type: "function",
@@ -51,7 +50,7 @@ const Home: NextPage = () => {
   const { data: walletClient } = useWalletClient();
   const { switchChain } = useSwitchChain();
 
-  const TREASURY: `0x${string}` = "0xd8542F48b9cB090120d2686fb483896424D6A3d8"; // <-- set this
+  const TREASURY: `0x${string}` = "0xd8542F48b9cB090120d2686fb483896424D6A3d8";
 
   // Get total number of proposals
   const { data: totalProposals } = useScaffoldReadContract({
@@ -212,11 +211,9 @@ const Home: NextPage = () => {
       account: connectedAddress as `0x${string}`,
       chain: sepolia,
     });
-
-    // Wait for confirmation
+    
     await publicClient!.waitForTransactionReceipt({ hash: txHash });
 
-    // (Optional) update UI — if you’re tracking ETH raised only, skip this.
     // You could add a `totalRaisedUsdc` field instead.
     setDonationAmount("");
     setSelectedProject(null);

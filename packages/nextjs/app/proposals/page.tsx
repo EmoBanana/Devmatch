@@ -74,8 +74,7 @@ const ProposalCard = ({ id }: { id: number }) => {
     milestones: any[];
   };
 
-  const pct =
-    (Number(formatEther(proposal.totalRaised)) / Math.max(1e-18, Number(formatEther(proposal.fundingGoal)))) * 100;
+  const pct = (Number(formatEther(proposal.totalRaised)) / Math.max(1e-18, Number(formatEther(proposal.fundingGoal)))) * 100;
 
   const nowSec = Math.floor(Date.now() / 1000);
   const isPending = proposal.status === 0; // Pending
@@ -97,7 +96,7 @@ const ProposalCard = ({ id }: { id: number }) => {
   return (
     <div className="rounded-2xl p-4 border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 shadow">
       <div className="font-extrabold text-lg">{proposal.title || `Proposal #${id}`}</div>
-      <p className="text-slate-300 text-sm">{proposal.description || "No description"}</p>
+      <p className="text-slate-300 text-sm text-justify">{proposal.description || "No description"}</p>
       <div className="mt-2 text-sm">Goal: {formatEther(proposal.fundingGoal)} ETH</div>
       <div className="mt-1 text-sm">Raised: {formatEther(proposal.totalRaised)} ETH</div>
       <div className="mt-1 text-sm">Votes: {String(proposal.totalVotes)}</div>
@@ -113,9 +112,7 @@ const ProposalCard = ({ id }: { id: number }) => {
           className="rounded-lg bg-gradient-to-r from-blue-400 to-purple-500 text-slate-900 font-extrabold px-3 py-1.5 shadow disabled:opacity-60"
           onClick={onVote}
           disabled={!votingOpen || alreadyVoted || isMining || !address}
-          title={
-            !address ? "Connect wallet" : alreadyVoted ? "You have already voted" : !votingOpen ? "Voting closed" : ""
-          }
+          title={!address ? "Connect wallet" : alreadyVoted ? "You have already voted" : !votingOpen ? "Voting closed" : ""}
         >
           {isMining ? "Voting..." : alreadyVoted ? "Voted" : "Vote"}
         </button>

@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import type { NextPage } from "next";
 import { parseEther } from "viem";
-import { useAccount } from "wagmi";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { useAccount } from "wagmi";
 import { useScaffoldReadContract } from "~~/hooks/scaffold-eth";
 
 const CreateProposalPage: NextPage = () => {
@@ -17,6 +17,11 @@ const CreateProposalPage: NextPage = () => {
     args: [address],
   });
   const isVerified: boolean = Boolean(kycInfo?.[0]);
+
+  // Frontend-only KYC details (not sent on-chain)
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
   const [docHash, setDocHash] = useState("");
   const [kycSubmitting, setKycSubmitting] = useState(false);
@@ -40,6 +45,7 @@ const CreateProposalPage: NextPage = () => {
     if (!docHash) return alert("Please provide a document hash (e.g. IPFS CID)");
     try {
       setKycSubmitting(true);
+      // Note: name/email/phone are frontend-only
       await writeContractAsync({
         functionName: "submitKYC",
         args: [docHash],
@@ -109,14 +115,36 @@ const CreateProposalPage: NextPage = () => {
           onSubmit={handleKycSubmit}
           className="max-w-[700px] mx-auto grid gap-3 rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 p-4 text-slate-100 shadow"
         >
-          <p className="text-slate-300 text-sm">Your address must submit KYC once before creating proposals.</p>
-          <label className="font-bold">KYC Document Hash (e.g. IPFS CID)</label>
+          <p className="text-slate-300 text-sm text-justify">
+            Your address must submit KYC once before creating proposals.
+          </p>
+
+          <label className="font-bold">Full Name</label>
           <input
-            value={docHash}
-            onChange={e => setDocHash(e.target.value)}
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
             className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
-            placeholder="ipfs://... or CID"
+            placeholder="John Doe"
           />
+
+          <label className="font-bold">Email Address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
+            placeholder="john@example.com"
+          />
+
+          <label className="font-bold">Phone Number</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
+            placeholder="+60123456789"
+          />
+
           <div className="flex gap-3">
             <button
               type="submit"
@@ -157,7 +185,7 @@ const CreateProposalPage: NextPage = () => {
         <textarea
           value={description}
           onChange={e => setDescription(e.target.value)}
-          className="min-h-[100px] rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
+          className="min-h-[100px] rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100 text-justify"
           placeholder="Project description"
         />
         <label className="font-bold">Funding Goal (ETH)</label>
@@ -189,7 +217,7 @@ const CreateProposalPage: NextPage = () => {
               <input
                 value={m.desc}
                 onChange={e => updateMilestone(i, "desc", e.target.value)}
-                className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100"
+                className="rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100 text-justify"
                 placeholder="Description"
               />
               <input

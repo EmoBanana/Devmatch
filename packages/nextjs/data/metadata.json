@@ -1,32 +1,14 @@
 [
   {
     "id": 1,
-    "desc": "Our Clean Water Initiative aims to provide sustainable access to clean drinking water for rural communities. Through the installation of modern well systems and water purification technology, we can help thousands of families gain access to this basic human necessity. The project includes community training programs to ensure long-term maintenance and sustainability.",
-    "image": "/projects/clean-water.jpg",
-    "tags": ["Environment", "Health", "Sustainability"]
+    "tags": ["Health", "Cancer"]
   },
   {
     "id": 2,
-    "desc": "The Educational Technology Program focuses on bridging the digital divide in underserved schools. We provide tablets, internet connectivity, and digital learning resources to enhance educational outcomes. Our program includes teacher training and ongoing technical support to ensure successful implementation.",
-    "image": "/projects/education-tech.jpg",
-    "tags": ["Education", "Technology", "Development"]
+    "tags": ["Health", "Cell"]
   },
   {
     "id": 3,
-    "desc": "Our Renewable Energy Project brings sustainable electricity to remote communities through solar panel installations. This initiative not only provides reliable power but also reduces dependency on fossil fuels and creates local employment opportunities in green energy maintenance.",
-    "image": "/projects/renewable-energy.jpg",
-    "tags": ["Environment", "Energy", "Sustainability"]
-  },
-  {
-    "id": 4,
-    "desc": "The Healthcare Access Initiative establishes mobile medical clinics to serve remote areas with limited healthcare infrastructure. Our teams provide essential medical services, preventive care, and health education to improve community health outcomes.",
-    "image": "/projects/healthcare.jpg",
-    "tags": ["Health", "Medical", "Community"]
-  },
-  {
-    "id": 5,
-    "desc": "Supporting local farmers with modern agricultural techniques, sustainable farming equipment, and market access programs. This initiative helps increase crop yields while protecting the environment through sustainable farming practices.",
-    "image": "/projects/agriculture.jpg",
-    "tags": ["Agriculture", "Sustainability", "Development"]
+    "tags": ["Environment", "Molecular Biology"]
   }
 ]

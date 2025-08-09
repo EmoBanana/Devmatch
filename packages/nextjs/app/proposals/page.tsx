@@ -16,8 +16,12 @@ const ProposedProjectsPage: NextPage = () => {
 
   useEffect(() => {
     if (allProposals) {
-      const n = (allProposals as unknown[]).length;
-      setIds(Array.from({ length: n }, (_, i) => i + 1));
+      const proposalsArr = (allProposals as any[]) || [];
+      const onlyPendingIds = proposalsArr
+        .map((p, idx) => ({ id: idx + 1, status: Number(p.status) }))
+        .filter(p => p.status === 0)
+        .map(p => p.id);
+      setIds(onlyPendingIds);
     }
   }, [allProposals]);
 
@@ -100,11 +104,11 @@ const ProposalCard = ({ id }: { id: number }) => {
     }
   };
 
-  const onSetTwenty = async () => {
+  const onApprove = async () => {
     try {
       await writeContractAsync({
-        functionName: "changeVoteRequired",
-        args: [0],
+        functionName: "setProposalVotes",
+        args: [BigInt(id), 20n],
       });
       alert("Proposal approved");
     } catch (e) {
@@ -117,8 +121,8 @@ const ProposalCard = ({ id }: { id: number }) => {
     <div className="rounded-2xl p-4 border border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 shadow">
       <div className="font-extrabold text-lg">{proposal.title || `Proposal #${id}`}</div>
       <p className="text-slate-300 text-sm text-justify">{proposal.description || "No description"}</p>
-      <div className="mt-2 text-sm">Goal: {formatEther(proposal.fundingGoal)} ETH</div>
-      <div className="mt-1 text-sm">Raised: {formatEther(proposal.totalRaised)} ETH</div>
+      <div className="mt-2 text-sm">Goal: {formatEther(proposal.fundingGoal)} USDC</div>
+      <div className="mt-1 text-sm">Raised: {formatEther(proposal.totalRaised)} USDC</div>
       <div className="mt-1 text-sm">Votes: {String(proposal.totalVotes)}</div>
       <div className="mt-2 w-full h-2 bg-white/10 rounded-full overflow-hidden">
         <div
@@ -132,29 +136,25 @@ const ProposalCard = ({ id }: { id: number }) => {
           className="rounded-lg bg-gradient-to-r from-blue-400 to-purple-500 text-slate-900 font-extrabold px-3 py-1.5 shadow disabled:opacity-60"
           onClick={onVote}
           disabled={!votingOpen || alreadyVoted || isMining || !address}
-          title={
-            !address ? "Connect wallet" : alreadyVoted ? "You have already voted" : !votingOpen ? "Voting closed" : ""
-          }
+          title={!address ? "Connect wallet" : alreadyVoted ? "You have already voted" : !votingOpen ? "Voting closed" : ""}
         >
           {isMining ? "Voting..." : alreadyVoted ? "Voted" : "Vote"}
         </button>
-        {isOwner ? (
-          <div className="ml-auto flex gap-2">
-            <button
-              type="button"
-              className="rounded-lg bg-gradient-to-r from-green-300 to-green-400 text-slate-900 font-extrabold px-3 py-1.5 shadow disabled:opacity-60"
-              onClick={onSetTwenty}
-              disabled={isMining}
-              title="Approve Proposal"
-            >
-              {isMining ? "Approving..." : "Approve Proposal"}
-            </button>
-          </div>
-        ) : null}
         {isPending ? (
           <span className="text-xs text-slate-400">
             Deadline: {new Date(Number(proposal.votingDeadline) * 1000).toLocaleString()}
           </span>
+        ) : null}
+        {isOwner ? (
+          <button
+            type="button"
+            className="ml-auto rounded-lg bg-gradient-to-r from-green-300 to-green-400 text-black font-extrabold px-3 py-1.5 shadow disabled:opacity-60"
+            onClick={onApprove}
+            disabled={!isPending || isMining}
+            title={!isPending ? "Only pending proposals can be approved" : ""}
+          >
+            {isMining ? "Approving..." : "Approve Proposal"}
+          </button>
         ) : null}
       </div>
     </div>

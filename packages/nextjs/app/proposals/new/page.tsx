@@ -188,7 +188,7 @@ const CreateProposalPage: NextPage = () => {
           className="min-h-[100px] rounded-lg border border-white/20 bg-slate-900/50 px-3 py-2 text-slate-100 text-justify"
           placeholder="Project description"
         />
-        <label className="font-bold">Funding Goal (ETH)</label>
+        <label className="font-bold">Funding Goal (USDC)</label>
         <input
           value={goal}
           onChange={e => setGoal(e.target.value)}

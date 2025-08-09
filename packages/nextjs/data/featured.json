@@ -3,21 +3,21 @@
     "id": 1,
     "title": "Oral Cancer Cell Suppressant",
     "description": "The aim of this study was to investigate whether Chaga mushroom extract affects the growth and metabolism of oral cancer cells. Alterations in cellular metabolism—including glycolysis and mitochondrial respiration—by treatment with Chaga mushroom extract are involved in oral cancer cell behavior, such as autophagy, cell cycle, and apoptosis.",
-    "goal": "5.0 ETH",
+    "goal": "10.0 USDC",
     "image": "./Cancer.png"
   },
   {
     "id": 2,
     "title": "High Efficiency Genome Editing",
     "description": "In this study, we aimed to develop a highly efficient and easily adaptable gene editing protocol to overcome the obstacles that currently limit the efficiency of point mutation in cell lines. There is significant cell death noted due to double-stranded chromosomal break associated with CRISPR and single cell cloning.",
-    "goal": "3.5 ETH",
+    "goal": "3.5 USDC",
     "image": "education-tech.jpg"
   },
   {
     "id": 3,
-    "title": "Renewable Energy Project",
-    "description": "Installing solar panels in rural communities to provide sustainable electricity.",
-    "goal": "7.2 ETH",
+    "title": "Precise Analysis of Single Small Extracellular Vesicles",
+    "description": "In this study, an ability of SEC columns with a pore size of 35 nm to remove unbound antibodies was evaluated. Magnetic beads conjugated with antibodies against tetraspanins are often used for affinity isolation methods, but it is very difficult to release sEVs from antibody-conjugated beads, and only limited subpopulations of sEVs can be isolated.",
+    "goal": "7.2 USDC",
     "image": "renewable-energy.jpg"
   }
 ]

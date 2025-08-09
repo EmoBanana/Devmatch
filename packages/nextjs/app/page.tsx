@@ -46,6 +46,9 @@ const Home: NextPage = () => {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [selectedTag, setSelectedTag] = useState("Ongoing");
   const [donationAmount, setDonationAmount] = useState("");
+  const [donationAmounts, setDonationAmounts] = useState<Record<number, string>>({});
+  const [modalAmount, setModalAmount] = useState("");
+  const [expandedMilestones, setExpandedMilestones] = useState<Record<number, boolean>>({});
   const carouselRef = useRef<HTMLDivElement>(null);
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -53,10 +56,10 @@ const Home: NextPage = () => {
 
   const TREASURY: `0x${string}` = "0x15C604f620D775B8CCE7916ee8EE4F9dEB87E1fb";
 
-  // Get total number of proposals
-  const { data: totalProposals } = useScaffoldReadContract({
-    contractName: "Chariteth",
-    functionName: "getTotalProposals",
+  // Load all proposals from chain
+  const { data: allProposals } = (useScaffoldReadContract as any)({
+    contractName: "Innovateth",
+    functionName: "getAllProposals",
   });
 
   // Extended featured array for infinite carousel
@@ -71,46 +74,42 @@ const Home: NextPage = () => {
     setCurrentIndex(prevIndex => (prevIndex === 0 ? extendedFeatured.length - 2 : prevIndex - 1));
   };
 
-  // Fetch ongoing projects
+  // Fetch ongoing (Active) projects from chain
   useEffect(() => {
-    const fetchOngoingProjects = async () => {
-      if (!totalProposals) {
-        setLoading(false);
-        return;
-      }
-
+    const fetchOngoing = async () => {
       try {
-        const projects = [];
-        const maxToFetch = Math.min(Number(totalProposals), MAX_PROJECTS_TO_FETCH);
-
-        for (let i = 1; i <= maxToFetch; i++) {
-          // Note: We would need to implement individual proposal reading
-          // For now, let's create some mock data
-          const project = {
-            id: i,
-            title: metaData[i - 1]?.desc ? `Project ${i}` : `Sample Project ${i}`,
-            description: metaData[i - 1]?.desc || "A sample charitable project",
-            fundingGoal: parseEther("5"),
-            totalRaised: parseEther((Math.random() * 3).toFixed(2)),
-            creator: "0x1234567890123456789012345678901234567890",
-            creationTime: new Date().toLocaleDateString("en-GB"),
-            milestones: [],
-            currentMilestone: 0,
-          };
-          projects.push(project);
-        }
-
-        setOngoingProjects(projects);
+        const proposals = (allProposals as any[]) || [];
+        // status: 0 Pending, 1 Active
+        const active = proposals
+          .map((p, idx) => ({
+            id: Number(p.proposalId) || idx + 1,
+            proposalId: p.proposalId,
+            title: p.title as string,
+            description: p.description as string,
+            fundingGoal: p.fundingGoal as bigint,
+            totalRaised: p.totalRaised as bigint,
+            creator: (p.creator as string) || "0x0000000000000000000000000000000000000000",
+            status: Number(p.status) as number,
+            milestones: p.milestones || [],
+            currentMilestone: Number(p.currentMilestone) || 0,
+          }))
+          .filter(p => p.status === 1)
+          .slice(0, MAX_PROJECTS_TO_FETCH)
+          .map(p => ({
+            ...p,
+            goal: `${formatEther(p.fundingGoal)} USDC`,
+          }));
+        setOngoingProjects(active);
         setLoading(false);
-      } catch (error) {
-        console.error("Error fetching projects:", error);
+      } catch (e) {
+        console.error("Error loading proposals:", e);
         setError("Failed to fetch projects");
         setLoading(false);
       }
     };
 
-    fetchOngoingProjects();
-  }, [totalProposals]);
+    fetchOngoing();
+  }, [allProposals]);
 
   // Carousel auto-scroll
   useEffect(() => {
@@ -142,48 +141,13 @@ const Home: NextPage = () => {
     }
   }, [currentIndex, extendedFeatured.length]);
 
-  // const handleDonate = async (proposalId: number) => {
-  //   if (!connectedAddress) {
-  //     alert("Please connect your wallet first");
-  //     return;
-  //   }
-
-  //   if (!donationAmount) {
-  //     alert("Please enter a donation amount");
-  //     return;
-  //   }
-
-  //   try {
-  //     const donationWei = parseEther(donationAmount);
-
-  //     await writeCharitethAsync({
-  //       functionName: "donate",
-  //       args: [BigInt(proposalId)],
-  //       value: donationWei,
-  //     });
-
-  //     // Update local state
-  //     setOngoingProjects(prevProjects =>
-  //       prevProjects.map(project =>
-  //         project.id === proposalId ? { ...project, totalRaised: project.totalRaised + donationWei } : project,
-  //       ),
-  //     );
-
-  //     setDonationAmount("");
-  //     setSelectedProject(null);
-  //     alert("Donation successful!");
-  //   } catch (error) {
-  //     console.error("Donation error:", error);
-  //     alert(`Donation failed: ${error}`);
-  //   }
-  // };
-
-  const handleDonate = async (proposalId: number) => {
+  const handleDonate = async (proposalId: number, amountStr?: string) => {
   if (!connectedAddress) {
     alert("Please connect your wallet first");
     return;
   }
-  if (!donationAmount) {
+  const amountInput = amountStr ?? donationAmount;
+  if (!amountInput) {
     alert("Please enter a donation amount");
     return;
   }
@@ -199,7 +163,7 @@ const Home: NextPage = () => {
     }
 
     // Amount in USDC (6 decimals)
-    const amount = parseUnits(donationAmount, USDC.decimals);
+    const amount = parseUnits(amountInput, USDC.decimals);
 
     // Choose recipient: treasury or the project’s creator
     const recipient =
@@ -219,6 +183,8 @@ const Home: NextPage = () => {
 
     // You could add a `totalRaisedUsdc` field instead.
     setDonationAmount("");
+    setDonationAmounts(prev => ({ ...prev, [proposalId]: "" }));
+    setModalAmount("");
     setSelectedProject(null);
     alert("USDC donation sent!");
   } catch (err) {
@@ -247,7 +213,29 @@ const Home: NextPage = () => {
 
   const closePopup = () => {
     setSelectedProject(null);
-    setDonationAmount("");
+    setModalAmount("");
+  };
+
+  const toggleMilestones = (projectId: number) => {
+    setExpandedMilestones(prev => ({
+      ...prev,
+      [projectId]: !prev[projectId]
+    }));
+  };
+
+  const getMilestoneStatusText = (status: number) => {
+    const statusMap = ["Pending", "Submitted", "Approved", "Rejected"];
+    return statusMap[status] || "Unknown";
+  };
+
+  const getMilestoneStatusColor = (status: number) => {
+    const colorMap = {
+      0: "text-yellow-600", // Pending
+      1: "text-blue-600",   // Submitted
+      2: "text-green-600",  // Approved
+      3: "text-red-600"     // Rejected
+    };
+    return colorMap[status as keyof typeof colorMap] || "text-gray-600";
   };
 
   if (loading) {
@@ -271,17 +259,15 @@ const Home: NextPage = () => {
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8 md:py-16">
-      <h1 className="flex flex-col items-center gap-2 font-extrabold text-2xl md:text-3xl text-center">
+      <h1 className="flex flex-col items-center gap-2 font-extrabold text-2xl md:text-3xl text-center text-slate">
         Ongoing Fundraising Projects
-        <div className="mt-2 inline-block rounded-full border border-indigo-300/70 bg-indigo-100 px-3 py-1 font-bold text-indigo-600">
-          <span>Earn 1 XP per 0.01 ETH donated</span>
-        </div>
+        
       </h1>
 
       {/* Carousel */}
       <div className="relative my-8 md:my-10">
         <button
-          className="absolute top-1/2 left-[-60px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-slate-900 shadow transition-transform hover:scale-105"
+          className="absolute top-1/2 left-[-60px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-black shadow transition-transform hover:scale-105"
           onClick={prevSlide}
           aria-label="Previous slide"
         >
@@ -296,7 +282,7 @@ const Home: NextPage = () => {
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
           >
             {extendedFeatured.map((project, index) => (
-              <div key={`${project.id}-${index}`} className="min-w-full grid md:grid-cols-2 gap-4 p-5">
+              <div key={`${project.id}-${index}`} className="min-w-full grid md:grid-cols-2 gap-4 p-5 text-black">
                 <div
                   className="w-full h-[280px] grid place-items-center text-7xl rounded-[14px] bg-slate-100 text-slate-400"
                   aria-hidden
@@ -305,23 +291,23 @@ const Home: NextPage = () => {
                 </div>
                 <div className="flex flex-col justify-between">
                   <div>
-                    <h2 className="text-xl font-bold">{project.title}</h2>
-                    <p className="text-slate-600">{project.description}</p>
+                    <h2 className="text-xl font-bold text-black">{project.title}</h2>
+                    <p className="text-black text-justify">{project.description}</p>
                   </div>
-                  <div className="flex items-baseline gap-2 text-indigo-600 font-extrabold">
+                  <div className="flex items-baseline gap-2 font-extrabold text-black">
                     <p>Funding Goal:</p>
-                    <p className="text-slate-900">{project.goal}</p>
+                    <p className="text-black">{project.goal}</p>
                   </div>
                   <input
-                    className="input input-bordered"
+                    className="bg-white border-black border-2 text-black placeholder-slate-500 px-3 py-2 rounded-lg"
                     value={donationAmount}
                     onChange={e => setDonationAmount(e.target.value)}
                     placeholder="Amount (USDC)"
                     inputMode="decimal"
                   />
                   <button
-                    className="mt-2 rounded-xl bg-gradient-to-r from-indigo-400 to-blue-400 text-slate-900 font-black py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
-                    onClick={() => handleDonate(project.id)}
+                    className="mt-2 rounded-xl bg-gradient-to-r from-indigo-400 to-blue-400 text-black font-black py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                    onClick={() => handleDonate(project.id, donationAmount)}
                     disabled={!connectedAddress}
                   >
                     {connectedAddress ? "Donate" : "Connect Wallet"}
@@ -332,7 +318,7 @@ const Home: NextPage = () => {
           </div>
         </div>
         <button
-          className="absolute top-1/2 right-[-60px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-slate-900 shadow transition-transform hover:scale-105"
+          className="absolute top-1/2 right-[-60px] -translate-y-1/2 size-10 rounded-full bg-white border border-slate-200 grid place-items-center text-black shadow transition-transform hover:scale-105"
           onClick={nextSlide}
           aria-label="Next slide"
         >
@@ -344,8 +330,8 @@ const Home: NextPage = () => {
       <div className="mb-6">
         <div className="flex flex-wrap gap-2 justify-center">
           <div
-            className={`px-4 py-2 rounded-full border bg-white text-slate-900 font-extrabold text-sm shadow transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
-              selectedTag === "Ongoing" ? "bg-indigo-100 border-indigo-300/70 text-indigo-600" : "border-slate-200"
+            className={`px-4 py-2 rounded-full border bg-white text-black font-extrabold text-sm shadow transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+              selectedTag === "Ongoing" ? "bg-indigo-100 border-indigo-300/70" : "border-slate-200"
             }`}
             onClick={() => handleTagClick("Ongoing")}
           >
@@ -354,8 +340,8 @@ const Home: NextPage = () => {
           {[...new Set(metaData.flatMap(item => item.tags))].map((tag, index) => (
             <div
               key={index}
-              className={`px-4 py-2 rounded-full border bg-white text-slate-900 font-extrabold text-sm shadow transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
-                selectedTag === tag ? "bg-indigo-100 border-indigo-300/70 text-indigo-600" : "border-slate-200"
+              className={`px-4 py-2 rounded-full border bg-white text-black font-extrabold text-sm shadow transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+                selectedTag === tag ? "bg-indigo-100 border-indigo-300/70" : "border-slate-200"
               }`}
               onClick={() => handleTagClick(tag)}
             >
@@ -368,31 +354,24 @@ const Home: NextPage = () => {
       {/* Project Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredProjects.map(project => {
-          const m = metaData.find(item => item.id === project.id);
           const progressPercentage =
             (Number(formatEther(project.totalRaised)) / Number(formatEther(project.fundingGoal))) * 100;
+          const amountForCard = donationAmounts[project.id] || "";
           return (
             <div
               key={project.id}
-              className="bg-white border border-slate-200 rounded-2xl shadow p-4 grid gap-3 transition hover:-translate-y-0.5 hover:shadow-lg cursor-pointer"
+              className="bg-white border border-slate-200 rounded-2xl shadow p-4 grid gap-3 transition hover:-translate-y-0.5 hover:shadow-lg cursor-pointer text-black"
               onClick={() => openPopup(project)}
             >
-              {m?.image && (
-                <div
-                  className="w-full h-44 grid place-items-center text-5xl bg-slate-100 text-slate-400 rounded-xl overflow-hidden"
-                  aria-hidden
-                >
-                  🧪
-                </div>
-              )}
               <div className="grid gap-2">
                 <div>
-                  <h1 className="text-lg font-black">{project.title}</h1>
+                  <h1 className="text-lg font-black text-black">{project.title}</h1>
+                  <p className="text-black text-justify">{project.description}</p>
                 </div>
-                <p>Funding Goal: {formatEther(project.fundingGoal)} ETH</p>
-                <div className="text-slate-600 font-semibold">
-                  <p>
-                    Raised: {formatEther(project.totalRaised)} ETH / {formatEther(project.fundingGoal)} ETH
+                <p className="text-black">Funding Goal: {formatEther(project.fundingGoal)} USDC</p>
+                <div className="font-semibold text-black">
+                  <p className="text-black">
+                    Raised: {formatEther(project.totalRaised)} USDC / {formatEther(project.fundingGoal)} USDC
                   </p>
                   <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
                     <div
@@ -400,16 +379,87 @@ const Home: NextPage = () => {
                       style={{ width: `${progressPercentage}%` }}
                     />
                   </div>
-                  <button
-                    className="mt-2 rounded-xl bg-gradient-to-r from-indigo-400 to-blue-400 text-slate-900 font-black py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleDonate(project.id);
-                    }}
-                    disabled={!connectedAddress}
-                  >
-                    {connectedAddress ? "Donate" : "Connect Wallet"}
-                  </button>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      className="bg-white border-black border-2 text-black placeholder-slate-500 px-3 py-2 rounded-lg flex-1"
+                      value={amountForCard}
+                      onChange={e => setDonationAmounts(prev => ({ ...prev, [project.id]: e.target.value }))}
+                      placeholder="Amount (USDC)"
+                      inputMode="decimal"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <button
+                      className="rounded-xl bg-gradient-to-r from-indigo-400 to-blue-400 text-black font-black py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleDonate(project.id, amountForCard);
+                      }}
+                      disabled={!connectedAddress}
+                    >
+                      {connectedAddress ? "Donate" : "Connect Wallet"}
+                    </button>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      className="rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-black font-bold py-1.5 px-3 shadow hover:-translate-y-0.5 hover:shadow-md text-sm flex-1"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      Feature Project
+                    </button>
+                    <button
+                      className="rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 text-black font-bold py-1.5 px-3 shadow hover:-translate-y-0.5 hover:shadow-md text-sm flex-1"
+                      onClick={e => {
+                        e.stopPropagation();
+                        toggleMilestones(project.id);
+                      }}
+                    >
+                      {expandedMilestones[project.id] ? "Hide Milestones" : "Check Milestones"}
+                    </button>
+                  </div>
+                  {expandedMilestones[project.id] && (
+                    <div className="mt-3 border-t border-slate-300 pt-3">
+                      <h3 className="font-bold text-black mb-2">Project Milestones</h3>
+                      {project.milestones && project.milestones.length > 0 ? (
+                        <div className="space-y-2">
+                          {project.milestones.map((milestone: any, index: number) => (
+                            <div 
+                              key={index} 
+                              className={`p-2 rounded-lg border ${
+                                index === project.currentMilestone 
+                                  ? "bg-blue-50 border-blue-300" 
+                                  : index < project.currentMilestone
+                                    ? "bg-green-50 border-green-300"
+                                    : "bg-gray-50 border-gray-300"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <h4 className="font-semibold text-black text-sm">
+                                  {milestone.title}
+                                </h4>
+                                <span className={`text-xs font-medium ${getMilestoneStatusColor(Number(milestone.status))}`}>
+                                  {getMilestoneStatusText(Number(milestone.status))}
+                                </span>
+                              </div>
+                              <p className="text-black text-xs text-justify mb-1">
+                                {milestone.description}
+                              </p>
+                              <div className="flex justify-between text-xs text-black">
+                                <span>Progress: {milestone.percentage}%</span>
+                                <span>Funds: {formatEther(milestone.fundsAllocated)} USDC</span>
+                              </div>
+                              {index === project.currentMilestone && (
+                                <div className="mt-1 text-xs text-blue-600 font-medium">
+                                  📍 Current Milestone
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">No milestones available</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -418,12 +468,12 @@ const Home: NextPage = () => {
       </div>
 
       {/* Footer CTA */}
-      <div className="mt-8 text-center bg-white border border-slate-200 rounded-2xl shadow p-7">
+      <div className="mt-8 text-center bg-white border border-slate-200 rounded-2xl shadow p-7 text-black">
         <h3 className="text-xl font-black">Are You A Company Looking To Make Giving a Habit?</h3>
-        <p className="text-slate-600 font-semibold">
+        <p className="font-semibold">
           Set up recurring donations and get monthly CSR reports — effortless, impactful, and transparent.
         </p>
-        <a className="inline-block mt-3 bg-gradient-to-r from-indigo-400 to-blue-400 text-slate-900 py-2 px-4 rounded-xl font-black">
+        <a className="inline-block mt-3 bg-gradient-to-r from-indigo-400 to-blue-400 text-black py-2 px-4 rounded-xl font-black">
           Start Now
         </a>
       </div>
@@ -432,11 +482,11 @@ const Home: NextPage = () => {
       {selectedProject && (
         <div className="fixed inset-0 bg-slate-900/40 grid place-items-center z-50" onClick={closePopup}>
           <div
-            className="w-[92vw] max-w-[950px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-5 relative"
+            className="w-[92vw] max-w-[950px] max-h-[80vh] bg-white border border-slate-200 rounded-2xl shadow-2xl p-5 relative text-black overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <button
-              className="absolute top-3 right-4 bg-white border border-slate-200 text-slate-900 text-lg w-8 h-8 rounded-lg"
+              className="absolute top-3 right-4 bg-white border border-slate-200 text-black text-lg w-8 h-8 rounded-lg"
               onClick={closePopup}
             >
               ×
@@ -449,13 +499,12 @@ const Home: NextPage = () => {
                 🔬
               </div>
               <div className="">
-                <h1 className="text-2xl font-black">{selectedProject.title}</h1>
-                <p>{metaData.find(item => item.id === selectedProject.id)?.desc || selectedProject.description}</p>
-                <p>Creator: {selectedProject.creator}</p>
-                <p>Funding Goal: {formatEther(selectedProject.fundingGoal)} ETH</p>
-                <p>
-                  Raised: {formatEther(selectedProject.totalRaised)} ETH / {formatEther(selectedProject.fundingGoal)}{" "}
-                  ETH
+                <h1 className="text-2xl font-black text-black">{selectedProject.title}</h1>
+                <p className="text-black text-justify">{selectedProject.description}</p>
+                <p className="text-black">Creator: {selectedProject.creator}</p>
+                <p className="text-black">Funding Goal: {formatEther(selectedProject.fundingGoal)} USDC</p>
+                <p className="text-black">
+                  Raised: {formatEther(selectedProject.totalRaised)} USDC / {formatEther(selectedProject.fundingGoal)} USDC
                 </p>
                 <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
                   <div
@@ -465,16 +514,79 @@ const Home: NextPage = () => {
                     }}
                   />
                 </div>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  <EtherInput value={donationAmount} onChange={setDonationAmount} placeholder="Amount (ETH)" />
+                <div className="flex flex-wrap gap-2 mt-3 items-center">
+                  <input
+                    className="bg-white border-black border-2 text-black placeholder-slate-500 px-3 py-2 rounded-lg"
+                    value={modalAmount}
+                    onChange={e => setModalAmount(e.target.value)}
+                    placeholder="Amount (USDC)"
+                    inputMode="decimal"
+                  />
                   <button
-                    className="rounded-xl bg-gradient-to-r from-indigo-400 to-blue-400 text-slate-900 font-black py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
-                    onClick={() => handleDonate(selectedProject.id)}
-                    disabled={!connectedAddress || !donationAmount}
+                    className="rounded-xl bg-gradient-to-r from-indigo-400 to-blue-400 text-black font-black py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                    onClick={() => handleDonate(selectedProject.id, modalAmount)}
+                    disabled={!connectedAddress || !modalAmount}
                   >
                     {connectedAddress ? "Donate" : "Connect Wallet"}
                   </button>
                 </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    className="rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-black font-bold py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-md flex-1"
+                  >
+                    Feature Project
+                  </button>
+                  <button
+                    className="rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 text-black font-bold py-2 px-4 shadow hover:-translate-y-0.5 hover:shadow-md flex-1"
+                    onClick={() => toggleMilestones(selectedProject.id)}
+                  >
+                    {expandedMilestones[selectedProject.id] ? "Hide Milestones" : "Check Milestones"}
+                  </button>
+                </div>
+                {expandedMilestones[selectedProject.id] && (
+                  <div className="mt-4 border-t border-slate-300 pt-4">
+                    <h3 className="font-bold text-black mb-3 text-lg">Project Milestones</h3>
+                    {selectedProject.milestones && selectedProject.milestones.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedProject.milestones.map((milestone: any, index: number) => (
+                          <div 
+                            key={index} 
+                            className={`p-3 rounded-lg border ${
+                              index === selectedProject.currentMilestone 
+                                ? "bg-blue-50 border-blue-300" 
+                                : index < selectedProject.currentMilestone
+                                  ? "bg-green-50 border-green-300"
+                                  : "bg-gray-50 border-gray-300"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-semibold text-black text-base">
+                                {milestone.title}
+                              </h4>
+                              <span className={`text-sm font-medium ${getMilestoneStatusColor(Number(milestone.status))}`}>
+                                {getMilestoneStatusText(Number(milestone.status))}
+                              </span>
+                            </div>
+                            <p className="text-black text-sm text-justify mb-2">
+                              {milestone.description}
+                            </p>
+                            <div className="flex justify-between text-sm text-black">
+                              <span>Progress: {milestone.percentage}%</span>
+                              <span>Funds: {formatEther(milestone.fundsAllocated)} USDC</span>
+                            </div>
+                            {index === selectedProject.currentMilestone && (
+                              <div className="mt-2 text-sm text-blue-600 font-medium">
+                                📍 Current Milestone
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No milestones available</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

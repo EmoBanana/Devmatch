@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "title": "Clean Water Initiative",
+    "description": "Providing clean water access to rural communities through sustainable well systems.",
+    "goal": "5.0 ETH",
+    "image": "clean-water.jpg"
+  },
+  {
+    "id": 2,
+    "title": "Educational Technology Program",
+    "description": "Bringing modern learning tools and internet access to underserved schools.",
+    "goal": "3.5 ETH",
+    "image": "education-tech.jpg"
+  },
+  {
+    "id": 3,
+    "title": "Renewable Energy Project",
+    "description": "Installing solar panels in rural communities to provide sustainable electricity.",
+    "goal": "7.2 ETH",
+    "image": "renewable-energy.jpg"
+  }
+]

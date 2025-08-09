@@ -1,4 +1,4 @@
-import { TransactionHash } from "./TransactionHash";
+// import { TransactionHash } from "./TransactionHash";
 import { formatEther } from "viem";
 import { Address } from "~~/components/scaffold-eth";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
@@ -33,7 +33,7 @@ export const TransactionsTable = ({ blocks, transactionReceipts }: TransactionsT
                 return (
                   <tr key={tx.hash} className="hover text-sm">
                     <td className="w-1/12 md:py-4">
-                      <TransactionHash hash={tx.hash} />
+                      <span className="font-mono text-sm">{tx.hash}</span>
                     </td>
                     <td className="w-2/12 md:py-4">
                       {tx.functionName === "0x" ? "" : <span className="mr-1">{tx.functionName}</span>}

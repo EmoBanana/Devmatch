@@ -43,9 +43,6 @@ export const getAlchemyHttpUrl = (chainId: number) => {
 };
 
 export const NETWORKS_EXTRA_DATA: Record<string, ChainAttributes> = {
-  [chains.hardhat.id]: {
-    color: "#b8af0c",
-  },
   [chains.mainnet.id]: {
     color: "#ff8b9e",
   },
@@ -123,14 +120,9 @@ export function getBlockExplorerTxLink(chainId: number, txnHash: string) {
  */
 export function getBlockExplorerAddressLink(network: chains.Chain, address: string) {
   const blockExplorerBaseURL = network.blockExplorers?.default?.url;
-  if (network.id === chains.hardhat.id) {
-    return `/blockexplorer/address/${address}`;
-  }
-
   if (!blockExplorerBaseURL) {
     return `https://etherscan.io/address/${address}`;
   }
-
   return `${blockExplorerBaseURL}/address/${address}`;
 }
 

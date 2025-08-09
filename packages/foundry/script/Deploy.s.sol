@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import "./DeployHelpers.s.sol";
 import { DeployYourContract } from "./DeployYourContract.s.sol";
+import { DeployChariteth } from "./DeployChariteth.s.sol";
 
 /**
  * @notice Main deployment script for all contracts
@@ -18,8 +19,8 @@ contract DeployScript is ScaffoldETHDeploy {
         DeployYourContract deployYourContract = new DeployYourContract();
         deployYourContract.run();
 
-        // Deploy another contract
-        // DeployMyContract myContract = new DeployMyContract();
-        // myContract.run();
+        // Deploy Chariteth contract
+        DeployChariteth deployChariteth = new DeployChariteth();
+        deployChariteth.run();
     }
 }
